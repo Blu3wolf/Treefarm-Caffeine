@@ -3,7 +3,7 @@ data:extend(
 	{
 		type = "technology",
 		name = "tf-caffeine",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/crafting-speed-booster.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/crafting-speed-booster.png",
 		effects = {
 			{
 				type = "unlock-recipe",

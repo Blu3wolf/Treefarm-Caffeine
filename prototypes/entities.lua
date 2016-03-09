@@ -3,7 +3,7 @@ data:extend(
 	{
 		type = "container",
 		name = "tf-crafting-speed-booster",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/crafting-speed-booster.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/crafting-speed-booster.png",
 		flags = {"placeable-neutral", "player-creation"},
 		minable = {mining_time = 1, result = "tf-crafting-speed-booster"},
 		max_health = 100,
@@ -15,7 +15,7 @@ data:extend(
 		inventory_size = 1,
 		picture =
 		{
-			filename = "__Treefarm-Caffeine-Addon__/graphics/icons/empty.png",
+			filename = "__Treefarm-Caffeine__/graphics/icons/empty.png",
 			priority = "extra-high",
 			width = 32,
 			height = 32,
@@ -30,7 +30,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-coffee-seed",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/coffee-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/coffee-seed.png",
 		order="b-b-h",
 		flags = {"placeable-neutral", "breaths-air"},
 		emissions_per_tick = -0.0001,
@@ -48,7 +48,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/coffee-seed.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/coffee-seed.png",
 				priority = "extra-high",
 				width = 32,
 				height = 32,
@@ -60,7 +60,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-small-coffee-plant",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/coffee-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/coffee-seed.png",
 		order="b-b-g",
 		flags = {"placeable-neutral", "placeable-off-grid", "breaths-air"},
 		emissions_per_tick = -0.0002,
@@ -78,7 +78,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/small-coffee-plant.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/small-coffee-plant.png",
 				priority = "extra-high",
 				width = 25,
 				height = 27,
@@ -90,7 +90,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-medium-coffee-plant",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/coffee-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/coffee-seed.png",
 		order="b-b-g",
 		flags = {"placeable-neutral", "placeable-off-grid", "breaths-air"},
 		emissions_per_tick = -0.0002,
@@ -108,7 +108,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/medium-coffee-plant.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/medium-coffee-plant.png",
 				priority = "extra-high",
 				width = 40,
 				height = 42,
@@ -120,7 +120,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-mature-coffee-plant",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/coffee-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/coffee-seed.png",
 		order="b-b-g",
 		flags = {"placeable-neutral", "placeable-off-grid", "breaths-air"},
 		emissions_per_tick = -0.0002,
@@ -138,7 +138,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/mature-coffee-plant.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/mature-coffee-plant.png",
 				priority = "extra-high",
 				width = 40,
 				height = 42,
@@ -162,7 +162,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-tea-seed",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/tea-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/tea-seed.png",
 		order="b-b-h",
 		flags = {"placeable-neutral", "breaths-air"},
 		emissions_per_tick = -0.0001,
@@ -180,7 +180,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/tea-seed.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/tea-seed.png",
 				priority = "extra-high",
 				width = 32,
 				height = 32,
@@ -193,7 +193,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-small-tea-bush",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/tea-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/tea-seed.png",
 		order="b-b-g",
 		flags = {"placeable-neutral", "placeable-off-grid", "breaths-air"},
 		emissions_per_tick = -0.0002,
@@ -211,7 +211,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/small-tea-bush.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/small-tea-bush.png",
 				priority = "extra-high",
 				width = 34,
 				height = 23,
@@ -223,7 +223,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-medium-tea-bush",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/tea-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/tea-seed.png",
 		order="b-b-g",
 		flags = {"placeable-neutral", "placeable-off-grid", "breaths-air"},
 		emissions_per_tick = -0.0003,
@@ -241,7 +241,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/medium-tea-bush.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/medium-tea-bush.png",
 				priority = "extra-high",
 				width = 27,
 				height = 27,
@@ -253,7 +253,7 @@ data:extend(
 	{
 		type = "tree",
 		name = "tf-mature-tea-bush",
-		icon = "__Treefarm-Caffeine-Addon__/graphics/icons/tea-seed.png",
+		icon = "__Treefarm-Caffeine__/graphics/icons/tea-seed.png",
 		order="b-b-g",
 		flags = {"placeable-neutral", "placeable-off-grid", "breaths-air"},
 		emissions_per_tick = -0.0003,
@@ -271,7 +271,7 @@ data:extend(
 		pictures =
 		{
 			{
-				filename = "__Treefarm-Caffeine-Addon__/graphics/entities/mature-tea-bush.png",
+				filename = "__Treefarm-Caffeine__/graphics/entities/mature-tea-bush.png",
 				priority = "extra-high",
 				width = 40,
 				height = 40,

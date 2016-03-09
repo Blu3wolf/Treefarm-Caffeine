@@ -104,7 +104,7 @@ local allInOne2 =
 
 
 
-game.on_init(function()
+script.on_init(function()
 	initTables()
 	-- this is used to "transfer" the needed information to the treefarm mod
 	if (remote.interfaces.treefarm_interface) and (remote.interfaces.treefarm_interface.addSeed) then
@@ -132,7 +132,7 @@ end)
 
 
 
-game.on_event(defines.events.on_built_entity, function(event)
+script.on_event(defines.events.on_built_entity, function(event)
 	if global.initDone == true then
 		if event.created_entity.name == "tf-crafting-speed-booster" then
 			if global.blocking == nil then
@@ -172,7 +172,7 @@ end)
 
 
 
-game.on_event(defines.events.on_tick, function(event)
+script.on_event(defines.events.on_tick, function(event)
 
 	if (global.blocking ~= nil) then
 		global.blocking.counter = global.blocking.counter + 1
@@ -210,7 +210,7 @@ game.on_event(defines.events.on_tick, function(event)
 end)
 
 
-game.on_event(defines.events.on_research_finished, function(event)
+script.on_event(defines.events.on_research_finished, function(event)
 	if event.research == "tf-caffeine" then
 		for _,player in pairs(game.players) do
 			if player.can_insert{name="tf-coffee-seed", count = 10} then

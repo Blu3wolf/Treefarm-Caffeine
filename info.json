@@ -1,11 +1,11 @@
 {
-  "name": "Treefarm-Caffeine-Addon",
-  "version": "0.4.0",
-  "title": "Treefarm-Caffeine-Addon",
-  "author": "drs",
+  "name": "Treefarm-Caffeine",
+  "version": "0.5.0",
+  "title": "Treefarm-Caffeine",
+  "author": "drs, Blu3wolf",
   "homepage": "",
-  "dependencies": ["base >= 0.12.0","Treefarm-Lite >= 0.2.0","Treefarm-AC >= 0.2.0"],
+  "dependencies": ["base >= 0.12.12","Treefarm-Lite >= 0.2.8","Treefarm-AC >= 0.2.3"],
   "description": "Addon for the Treefarm-Mod. Introduces coffee and tea plants to produce ability-booster
 
-Published under the CC BY-NC-ND 4.0 License"
+Published under the GNU GPL v3.0 License"
 }
