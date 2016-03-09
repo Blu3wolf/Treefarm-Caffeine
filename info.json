@@ -1,0 +1,11 @@
+{
+  "name": "Treefarm-Caffeine",
+  "version": "0.5.0",
+  "title": "Treefarm-Caffeine",
+  "author": "drs, Blu3wolf",
+  "homepage": "",
+  "dependencies": ["base >= 0.12.12","Treefarm-Lite >= 0.2.8","Treefarm-AC >= 0.2.3"],
+  "description": "Addon for the Treefarm-Mod. Introduces coffee and tea plants to produce ability-booster
+
+Published under the GNU GPL v3.0 License"
+}
