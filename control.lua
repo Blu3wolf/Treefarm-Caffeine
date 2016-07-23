@@ -1,5 +1,3 @@
-require "defines"
-
 
 local BUFFTIME = 60
 local DEBUFFTIME = 90
@@ -112,14 +110,14 @@ script.on_init(function()
 		-- if everything is ok the function returns nil
 		local errorMsg1 = remote.call("treefarm_interface", "addSeed", allInOne1)
 		if errorMsg2 ~= nil then
-			for _, player in ipairs(game.players) do
+			for _, player in pairs(game.players) do
 				player.print(errorMsg)
 			end
 			return
 		end
 		local errorMsg2 = remote.call("treefarm_interface", "addSeed", allInOne2)
 		if errorMsg2 ~= nil then
-			for _, player in ipairs(game.players) do
+			for _, player in pairs(game.players) do
 				player.print(errorMsg)
 			end
 			return
@@ -142,11 +140,15 @@ script.on_event(defines.events.on_built_entity, function(event)
 				global.blocking = {ent = event.created_entity, counter = 0}
 			end
 
+			local player = game.players[event.player_index]
+			
 			if global.caffeineTimer.state == "nothing" then
 				global.caffeineTimer.running = true
 				global.caffeineTimer.state = "buff"
-				global.caffeineTimer.initialModifierValue = game.forces.player.manual_crafting_speed_modifier
-				game.forces.player.manual_crafting_speed_modifier = BUFFMODIFIER
+				global.caffeineTimer.initialModifierValue = player.character_crafting_speed_modifier
+				
+				player.character_crafting_speed_modifier = BUFFMODIFIER
+				
 				global.caffeineTimer.buffValue = global.caffeineTimer.buffValue + BUFFTIME
 				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue + DEBUFFTIME
 				global.caffeineTimer.amount = 1
@@ -160,7 +162,7 @@ script.on_event(defines.events.on_built_entity, function(event)
 				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue + math.floor(DEBUFFTIME / global.caffeineTimer.amount)
 			elseif global.caffeineTimer.state == "debuff" then
 				--global.caffeineTimer.state = "buff"
-				--game.forces.player.manual_crafting_speed_modifier = BUFFMODIFIER
+				--player.character_crafting_speed_modifier = BUFFMODIFIER
 				--global.caffeineTimer.buffValue = global.caffeineTimer.buffValue + BUFFTIME
 				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue - math.floor(0.1 * global.caffeineTimer.debuffValue)
 			end
@@ -183,28 +185,30 @@ script.on_event(defines.events.on_tick, function(event)
 	end
 
 	if (game.tick % 60 == 0) and (global.caffeineTimer.running == true) and (global.initDone == true) then
-		if global.caffeineTimer.state == "buff" then
-			global.caffeineTimer.buffValue = global.caffeineTimer.buffValue - 1
-			if global.caffeineTimer.buffValue <= 0 then
-				global.caffeineTimer.buffValue = 0
-				global.caffeineTimer.state = "debuff"
-				game.forces.player.manual_crafting_speed_modifier = DEBUFFMODIFIER
-			end
-		elseif global.caffeineTimer.state == "debuff" then
-			global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue - 1
-			if global.caffeineTimer.debuffValue <= 0 then
-				global.caffeineTimer.debuffValue = 0
-				global.caffeineTimer.state = "nothing"
-				global.caffeineTimer.running = false
-				game.forces.player.manual_crafting_speed_modifier = global.caffeineTimer.initialModifierValue
+		for _, player in pairs(game.players) do
+			if global.caffeineTimer.state == "buff" then
+				global.caffeineTimer.buffValue = global.caffeineTimer.buffValue - 1
+				if global.caffeineTimer.buffValue <= 0 then
+					global.caffeineTimer.buffValue = 0
+					global.caffeineTimer.state = "debuff"
+					player.character_crafting_speed_modifier = DEBUFFMODIFIER
+				end
+			elseif global.caffeineTimer.state == "debuff" then
+				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue - 1
+				if global.caffeineTimer.debuffValue <= 0 then
+					global.caffeineTimer.debuffValue = 0
+					global.caffeineTimer.state = "nothing"
+					global.caffeineTimer.running = false
+					player.character_crafting_speed_modifier = global.caffeineTimer.initialModifierValue
 
-				for _, player in ipairs(game.players) do
 					if player.gui.left.caffeineRoot ~= nil then
 						player.gui.left.caffeineRoot.destroy()
 					end
+					
 				end
 			end
 		end
+		
 		updateGUI()
 	end
 end)
@@ -216,12 +220,20 @@ script.on_event(defines.events.on_research_finished, function(event)
 			if player.can_insert{name="tf-coffee-seed", count = 10} then
 				player.insert{name="tf-coffee-seed", count = 10}
 			else
-				game.get_surface("nauvis").create_entity{name = "item-on-ground", position = player.position, stack = {name="tf-coffee-seed", count = 10}}
+				player.surface.create_entity({
+					name = "item-on-ground", 
+					position = player.position, 
+					stack = {name="tf-coffee-seed", count = 10}
+				})
 			end
 			if player.can_insert{name = "tf-tea-seed", count = 10} then
 				player.insert{name = "tf-tea-seed", count = 10}
 			else
-				game.get_surface("nauvis").create_entity{name = "item-on-ground", position = player.position, stack = {name="tf-tea-seed", count = 10}}
+				player.surface.create_entity({
+					name = "item-on-ground", 
+					position = player.position, 
+					stack = {name="tf-tea-seed", count = 10}
+				})
 			end
 		end
 	end
@@ -230,7 +242,7 @@ end)
 
 
 function showGUI()
-	for _, player in ipairs(game.players) do
+	for _, player in pairs(game.players) do
 		if player.gui.left.caffeineRoot == nil then
 			--create GUI
 			local text = "Increased for"
@@ -254,7 +266,7 @@ function updateGUI()
 		timerValue = global.caffeineTimer.debuffValue
 	end
 
-	for _, player in ipairs(game.players) do
+	for _, player in pairs(game.players) do
 		if player.gui.left.caffeineRoot ~= nil then
 			local arguments = "%s %d s"
 			if timerValue > 600 then
@@ -268,12 +280,13 @@ end
 
 
 function initTables()
-	global.caffeineTimer = {}
-		global.caffeineTimer.running = false
-		global.caffeineTimer.state = "nothing"
-		global.caffeineTimer.buffValue = 0
-		global.caffeineTimer.debuffValue = 0
-
-	global.caffeineTimer.initialModifierValue = game.forces.player.manual_crafting_speed_modifier
+	global.caffeineTimer = {
+		  running = false
+		, state = "nothing"
+		, buffValue = 0
+		, debuffValue = 0
+		, initialModifierValue = 0 -- reset to the player's current crafting speed modifier the first time they consume caffeine
+	}
+	
 	global.initDone = false
 end
