@@ -99,7 +99,7 @@ data:extend(
 			count = 2,
 			mining_particle = "wooden-particle",
 			mining_time = 0.2,
-			result = "raw-wood"
+			result = "tf-coffee-seed"
 		},
 		max_health = 20,
 		collision_box = {{-0.2, -0.2}, {0.2, 0.2}},
@@ -232,7 +232,7 @@ data:extend(
 			count = 2,
 			mining_particle = "wooden-particle",
 			mining_time = 0.2,
-			result = "raw-wood"
+			result = "tf-tea-seed"
 		},
 		max_health = 20,
 		collision_box = {{-0.2, -0.2}, {0.2, 0.2}},

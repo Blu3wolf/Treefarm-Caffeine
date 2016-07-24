@@ -1,11 +1,10 @@
 {
   "name": "Treefarm-Caffeine",
-  "version": "0.5.0",
+  "version": "0.7.0",
+  "factorio_version": "0.13",
   "title": "Treefarm-Caffeine",
-  "author": "drs, Blu3wolf",
-  "homepage": "",
-  "dependencies": ["base >= 0.12.12","Treefarm-Lite >= 0.2.8","Treefarm-AC >= 0.2.3"],
-  "description": "Addon for the Treefarm-Mod. Introduces coffee and tea plants to produce ability-booster
-
-Published under the GNU GPL v3.0 License"
+  "author": "drs, Blu3wolf, Treefarm Team",
+  "homepage": "https://github.com/Blu3wolf/Treefarm-Caffeine",
+  "dependencies": ["base >= 0.13.0","Treefarm-Lite >= 0.5.1","Treefarm-AC >= 0.3.0"],
+  "description": "Addon for Treefarm-Lite. Introduces coffee and tea plants to produce ability-boosts.\r\nPublished under the GNU GPL v3.0 License"
 }

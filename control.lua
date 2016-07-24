@@ -1,279 +1,346 @@
-require "defines"
 
+local BUFF_SECONDS_PER_CAFFEINE = 60
+local DEBUFF_SECONDS_PER_CAFFEINE = 90
 
-local BUFFTIME = 60
-local DEBUFFTIME = 90
+local STATE_NOTRUNNING = "nothing"
+local STATE_BUFFED = "buff"
+local STATE_DEBUFFED = "debuff"
 
 local BUFFMODIFIER = 1
 local DEBUFFMODIFIER = -0.5
--- the (arbitrary) name of the seed, only used internally
-local mySeedTypeName1 = "coffeeplant"
-local mySeedTypeName2 = "teaplant"
 
--- the entity-names of the growing stages
--- here the plant will grow from "alien-seed" over "small-alien-plant" over "medium-alien-plant" to "mature-alien-plant"
-local myGrowingStates1 =
-	{
-		"tf-coffee-seed",
-		"tf-small-coffee-plant",
-		"tf-medium-coffee-plant",
-		"tf-mature-coffee-plant"
+function reset_player_caffeine_data(player_index)
+	global.tfCaffeine.players[player_index] = {
+		  state = STATE_NOTRUNNING
+		, consumed_amount = 0
+		, remaining_seconds = 0
 	}
-local myGrowingStates2 =
-	{
-		"tf-tea-seed",
-		"tf-small-tea-bush",
-		"tf-medium-tea-bush",
-		"tf-mature-tea-bush"
-	}
+end
 
--- the mining-result of the last growing state
-local myOutput1 = {"tf-coffee-beans", 1}
-local myOutput2 = {"tf-tea-leaves", 2}
+function upgrade_to_v7()
 
--- defines the growing speed-modifier for different tiles
--- 1.00 means normal speed; 0.50 means half speed; 2.00 means double speed 
-local myTileEfficiency1 =
-	{
-		["grass"] = 1.00,
-		["grass-medium"] = 1.00,
-		["grass-dry"] = 0.90,
-		["dirt"] = 0.80,
-		["dirt-dark"] = 0.80,
-		["hills"] = 1.00,
-		["sand"] = 0.50,
-		["sand-dark"] = 0.50,
+	if (global.blocking ~= nil) then
+		global.blocking.ent.destroy()
+	end
+	
+	global.tfCaffeine.init_done = global.initDone
+	global.initDone = nil
+	
+	-- the second counter is already set to zero by the initialize_global_data() function
 
-		["other"] = 0.1
-	}
-
-local myTileEfficiency2 =
-	{
-		["grass"] = 0.50,
-		["grass-medium"] = 0.60,
-		["grass-dry"] = 1.00,
-		["dirt"] = 1.00,
-		["dirt-dark"] = 1.00,
-		["hills"] = 1.00,
-		["sand"] = 0.50,
-		["sand-dark"] = 0.50,
-
-		["other"] = 0.1
-	}
-
-
--- defines the minimum amount of ticks that are needed to evolve into the next growing-state
-local myBasicGrowingTime1 = 12500 * 0.9 -- approx 1/2 day +/- 10%
-local myBasicGrowingTime2 = 25000 * 0.9 -- approx 1 day +/- 10%
-
--- defines the highest value that might be added to the basic growing time
--- in general the growing time is determined by basicGrowingTime + randomValue
--- randomValue is between 0 and randomGrowingTime
-local myRandomGrowingTime1 = 12500 / 5
-local myRandomGrowingTime2 = 25000 / 5
-
--- defines how big the impact of fertilizer is
--- the total growing efficiency is TileEfficiency + fertilizerBoost ( if fertilizer was applied)
--- e.g. total efficiency of an alient-plant on a grass-tile with fertilizer = 2, which means double growing speed 
-local myFertilizerBoost1 = 0.50
-local myFertilizerBoost2 = 0.50
+	-- get rid of the GUI for all players. if we need to show it it will be added back for the first player
+	for _, player in pairs(game.players) do
+		if player.gui.left.caffeineRoot ~= nil then
+			player.gui.left.caffeineRoot.destroy()
+		end
+	end
+	
+	if global.caffeineTimer.state ~= STATE_NOTRUNNING then
+		-- convert the state to be state for the first player, since tf-caffeine was written before multiplayer
+		global.tfCaffeine.players[1] = {
+			  state = global.caffeineTimer.state
+			, consumed_amount = global.caffeineTimer.amount or 1
+		}
+		
+		-- convert the crafting speed
+		-- v6 and earlier just set the crafting speed, however doing that will ignore any applied
+		-- modifiers from other mods, so we just want to increase or decrease the crafting speed as appropriate
+		game.players[1].character_crafting_speed_modifier = global.caffeineTimer.initialModifierValue
+		if (global.tfCaffeine.players[1].state == STATE_BUFFED) then
+			global.tfCaffeine.players[1].remaining_seconds = global.caffeineTimer.buffValue
+			game.players[1].character_crafting_speed_modifier = game.players[1].character_crafting_speed_modifier + BUFFMODIFIER
+		else
+			global.tfCaffeine.players[1].remaining_seconds = global.caffeineTimer.debuffValue
+			game.players[1].character_crafting_speed_modifier = game.players[1].character_crafting_speed_modifier + DEBUFFMODIFIER
+		end
+		
+		update_gui(1)
+	end
+	
+	global.caffeineTimer = nil
+	
+end
 
 
--- !!!do not modify!!!
-local allInOne1 =
-	{
-		["name"] = mySeedTypeName1,
-		["states"] = myGrowingStates1,
-		["output"] = myOutput1,
-		["efficiency"] = myTileEfficiency1,
-		["basicGrowingTime"] = myBasicGrowingTime1,
-		["randomGrowingTime"] = myRandomGrowingTime1,
-		["fertilizerBoost"] = myFertilizerBoost1
-	}
 
-local allInOne2 =
-	{
-		["name"] = mySeedTypeName2,
-		["states"] = myGrowingStates2,
-		["output"] = myOutput2,
-		["efficiency"] = myTileEfficiency2,
-		["basicGrowingTime"] = myBasicGrowingTime2,
-		["randomGrowingTime"] = myRandomGrowingTime2,
-		["fertilizerBoost"] = myFertilizerBoost2
-	}
-
-
+function initialize_global_data()
+	global.tfCaffeine = global.tfCaffeine or {}
+	global.tfCaffeine.players = {}
+	global.tfCaffeine.init_done = false
+	global.tfCaffeine.second_counter = 0
+	
+	for	idx = 1, #game.players do
+		-- its safe to reset all the players as long as we don't do it on every configuration change
+		reset_player_caffeine_data(idx)
+	end
+end
 
 script.on_init(function()
-	initTables()
+	initialize_global_data()
 	-- this is used to "transfer" the needed information to the treefarm mod
 	if (remote.interfaces.treefarm_interface) and (remote.interfaces.treefarm_interface.addSeed) then
+	
+		-- !!!do not modify!!!
+		local coffeeplant = {
+			["name"] = "coffeeplant",
+			["states"] = {
+				"tf-coffee-seed",
+				"tf-small-coffee-plant",
+				"tf-medium-coffee-plant",
+				"tf-mature-coffee-plant"
+			},
+			["efficiency"] = {
+				["grass"] = 1.00,
+				["grass-medium"] = 1.00,
+				["grass-dry"] = 0.90,
+				["dirt"] = 0.80,
+				["dirt-dark"] = 0.80,
+				["hills"] = 1.00,
+				["sand"] = 0.50,
+				["sand-dark"] = 0.50,
+
+				["other"] = 0.1
+			},
+			["basicGrowingTime"] = 12500 * 0.9, -- approx 1/2 day +/- 10%
+			["randomGrowingTime"] = 12500 / 5,
+			["fertilizerBoost"] = 0.50 -- grow 50% faster w/ fertilizxer applied
+		}
+
+		local teaplant = {
+			["name"] = "teaplant",
+			["states"] = {
+				"tf-tea-seed",
+				"tf-small-tea-bush",
+				"tf-medium-tea-bush",
+				"tf-mature-tea-bush"
+			},
+			["efficiency"] = {
+				["grass"] = 0.50,
+				["grass-medium"] = 0.60,
+				["grass-dry"] = 1.00,
+				["dirt"] = 1.00,
+				["dirt-dark"] = 1.00,
+				["hills"] = 1.00,
+				["sand"] = 0.50,
+				["sand-dark"] = 0.50,
+
+				["other"] = 0.1
+			},
+			["basicGrowingTime"] = 25000 * 0.9, -- approx 1 day +/- 10%
+			["randomGrowingTime"] = 25000 / 5, 
+			["fertilizerBoost"] = 0.50  -- grow 50% faster w/ fertilizer applied
+		}
+		
 		-- if something went wrong an error message is returned
 		-- if everything is ok the function returns nil
-		local errorMsg1 = remote.call("treefarm_interface", "addSeed", allInOne1)
-		if errorMsg2 ~= nil then
-			for _, player in ipairs(game.players) do
+		local message = remote.call("treefarm_interface", "addSeed", coffeeplant)
+		if message ~= nil then
+			for _, player in pairs(game.players) do
 				player.print(errorMsg)
 			end
 			return
 		end
-		local errorMsg2 = remote.call("treefarm_interface", "addSeed", allInOne2)
-		if errorMsg2 ~= nil then
-			for _, player in ipairs(game.players) do
+		
+		message = remote.call("treefarm_interface", "addSeed", teaplant)
+		if message ~= nil then
+			for _, player in pairs(game.players) do
 				player.print(errorMsg)
 			end
 			return
 		end
-		global.initDone = true
+		global.tfCaffeine.init_done = true
 	end
 end)
 
+script.on_configuration_changed(function (data)
 
+	-- NOTE: initialize has already been called by on_init
+
+	if data.mod_changes == nil or data.mod_changes["Treefarm-Caffeine"] == nil or data.mod_changes["Treefarm-Caffeine"].old_version == nil then
+		return
+	end
+	
+	local previousVersion = tonumber(string.sub(data.mod_changes["Treefarm-Caffeine"].old_version, 3, 5))
+
+	-- NOTE: these migrations are meant to be cumulative. so to upgrade from v5 to v7, 
+	-- the v5 update must run, then the v6 update, then the v7 update
+	if (previousVersion < 7.0) then
+		initialize_global_data() -- initialization for v6 and earlier was different, so we have to run it again
+		upgrade_to_v7()
+	end
+	
+end)
 
 
 
 script.on_event(defines.events.on_built_entity, function(event)
-	if global.initDone == true then
-		if event.created_entity.name == "tf-crafting-speed-booster" then
-			if global.blocking == nil then
-				global.blocking = {ent = event.created_entity, counter = 0}
-			else
-				global.blocking.ent.destroy()
-				global.blocking = {ent = event.created_entity, counter = 0}
-			end
-
-			if global.caffeineTimer.state == "nothing" then
-				global.caffeineTimer.running = true
-				global.caffeineTimer.state = "buff"
-				global.caffeineTimer.initialModifierValue = game.forces.player.manual_crafting_speed_modifier
-				game.forces.player.manual_crafting_speed_modifier = BUFFMODIFIER
-				global.caffeineTimer.buffValue = global.caffeineTimer.buffValue + BUFFTIME
-				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue + DEBUFFTIME
-				global.caffeineTimer.amount = 1
-			elseif global.caffeineTimer.state == "buff" then
-				if (global.caffeineTimer.amount) and (global.caffeineTimer.amount >= 0) then
-					global.caffeineTimer.amount = global.caffeineTimer.amount + 1
-				else
-					global.caffeineTimer.amount = 1
-				end
-				global.caffeineTimer.buffValue = global.caffeineTimer.buffValue + math.floor(BUFFTIME / global.caffeineTimer.amount)
-				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue + math.floor(DEBUFFTIME / global.caffeineTimer.amount)
-			elseif global.caffeineTimer.state == "debuff" then
-				--global.caffeineTimer.state = "buff"
-				--game.forces.player.manual_crafting_speed_modifier = BUFFMODIFIER
-				--global.caffeineTimer.buffValue = global.caffeineTimer.buffValue + BUFFTIME
-				global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue - math.floor(0.1 * global.caffeineTimer.debuffValue)
-			end
-			showGUI()
-		end
+	if global.tfCaffeine.init_done == false or event.created_entity.name ~= "tf-crafting-speed-booster" then
+		return
 	end
+	
+	event.created_entity.destroy()
+	
+	local player = game.players[event.player_index]
+	local tf_player = global.tfCaffeine.players[event.player_index]
+	
+	if tf_player.state == STATE_NOTRUNNING then
+		tf_player.state = STATE_BUFFED
+		tf_player.consumed_amount = tf_player.consumed_amount + 1
+		tf_player.remaining_seconds = BUFF_SECONDS_PER_CAFFEINE
+		
+		player.character_crafting_speed_modifier = player.character_crafting_speed_modifier + BUFFMODIFIER
+	
+	elseif tf_player.state == STATE_BUFFED then
+		-- eat another pill
+		tf_player.consumed_amount = tf_player.consumed_amount + 1
+		
+		-- each additional pill increases the buff time by fewer seconds, down to a 1 second minumum
+		tf_player.remaining_seconds = tf_player.remaining_seconds + math.max(1, math.floor(BUFF_SECONDS_PER_CAFFEINE / tf_player.consumed_amount))
+	elseif tf_player.state == STATE_DEBUFFED then
+	
+		-- consuming a pill while in the debuff state will reduce the remaining debuff time by 10%
+		tf_player.remaining_seconds = math.floor(0.9 * tf_player.remaining_seconds)
+	
+	end
+	
+	update_gui(event.player_index)
 end)
-
-
 
 
 script.on_event(defines.events.on_tick, function(event)
 
-	if (global.blocking ~= nil) then
-		global.blocking.counter = global.blocking.counter + 1
-		if global.blocking.counter >= 60 then
-			global.blocking.ent.destroy()
-			global.blocking = nil
-		end
+	global.tfCaffeine.second_counter = global.tfCaffeine.second_counter + 1
+
+	if (not global.tfCaffeine.init_done) or (global.tfCaffeine.second_counter ~= 60) then
+		return
 	end
-
-	if (game.tick % 60 == 0) and (global.caffeineTimer.running == true) and (global.initDone == true) then
-		if global.caffeineTimer.state == "buff" then
-			global.caffeineTimer.buffValue = global.caffeineTimer.buffValue - 1
-			if global.caffeineTimer.buffValue <= 0 then
-				global.caffeineTimer.buffValue = 0
-				global.caffeineTimer.state = "debuff"
-				game.forces.player.manual_crafting_speed_modifier = DEBUFFMODIFIER
+	
+	global.tfCaffeine.second_counter = 0 -- reset the second timer
+	
+	for idx = 1, #game.players do
+		local tf_player = global.tfCaffeine.players[idx]
+		
+		if tf_player.state == STATE_BUFFED then
+			tf_player.remaining_seconds = tf_player.remaining_seconds - 1
+			
+			if tf_player.remaining_seconds <= 0 then
+				tf_player.remaining_seconds = tf_player.consumed_amount * DEBUFF_SECONDS_PER_CAFFEINE
+				tf_player.state = STATE_DEBUFFED
+				
+				-- undo the buff modifier and add in the debuff modifier
+				game.players[idx].character_crafting_speed_modifier = game.players[idx].character_crafting_speed_modifier - BUFFMODIFIER + DEBUFFMODIFIER
+				
 			end
-		elseif global.caffeineTimer.state == "debuff" then
-			global.caffeineTimer.debuffValue = global.caffeineTimer.debuffValue - 1
-			if global.caffeineTimer.debuffValue <= 0 then
-				global.caffeineTimer.debuffValue = 0
-				global.caffeineTimer.state = "nothing"
-				global.caffeineTimer.running = false
-				game.forces.player.manual_crafting_speed_modifier = global.caffeineTimer.initialModifierValue
+			
+			update_gui(idx)
+		elseif tf_player.state == STATE_DEBUFFED then
+			tf_player.remaining_seconds = tf_player.remaining_seconds - 1
 
-				for _, player in ipairs(game.players) do
-					if player.gui.left.caffeineRoot ~= nil then
-						player.gui.left.caffeineRoot.destroy()
-					end
-				end
+			if tf_player.remaining_seconds <= 0 then
+				tf_player.remaining_seconds = 0
+				tf_player.consumed_amount = 0
+				tf_player.state = STATE_NOTRUNNING
+				
+				-- undo the debuff modifier
+				game.players[idx].character_crafting_speed_modifier = game.players[idx].character_crafting_speed_modifier - DEBUFFMODIFIER
 			end
+			
+			update_gui(idx)
 		end
-		updateGUI()
+		
 	end
 end)
 
 
 script.on_event(defines.events.on_research_finished, function(event)
-	if event.research == "tf-caffeine" then
-		for _,player in pairs(game.players) do
-			if player.can_insert{name="tf-coffee-seed", count = 10} then
-				player.insert{name="tf-coffee-seed", count = 10}
-			else
-				game.get_surface("nauvis").create_entity{name = "item-on-ground", position = player.position, stack = {name="tf-coffee-seed", count = 10}}
-			end
-			if player.can_insert{name = "tf-tea-seed", count = 10} then
-				player.insert{name = "tf-tea-seed", count = 10}
-			else
-				game.get_surface("nauvis").create_entity{name = "item-on-ground", position = player.position, stack = {name="tf-tea-seed", count = 10}}
-			end
-		end
+	if event.research.name ~= "tf-caffeine" then
+		return
 	end
+
+	-- give every player on the force that researched the technology
+	-- a single stack each of coffe and tea seeds so that they can start farming them
+	local coffee_stack_size = game.item_prototypes["tf-coffee-seed"].stack_size
+	local tea_stack_size = game.item_prototypes["tf-tea-seed"].stack_size
+	
+	for _, player in pairs(event.research.force.players) do
+		if player.can_insert{name="tf-coffee-seed", count = coffee_stack_size} then
+			player.insert{name="tf-coffee-seed", count = coffee_stack_size}
+		else
+			player.surface.create_entity({
+				name = "item-on-ground", 
+				position = player.position, 
+				stack = {name="tf-coffee-seed", count = coffee_stack_size}
+			})
+		end
+		
+		if player.can_insert{name = "tf-tea-seed", count = tea_stack_size} then
+			player.insert{name = "tf-tea-seed", count = tea_stack_size}
+		else
+			player.surface.create_entity({
+				name = "item-on-ground", 
+				position = player.position, 
+				stack = {name="tf-tea-seed", count = tea_stack_size}
+			})
+		end
+		
+		player.print("Received a gift: Coffee and Tea seeds")
+	end
+
 end)
 
+script.on_event(defines.events.on_player_created, function(event)
+	
+	reset_player_caffeine_data(event.player_index)
 
+end)
 
-function showGUI()
-	for _, player in ipairs(game.players) do
-		if player.gui.left.caffeineRoot == nil then
-			--create GUI
-			local text = "Increased for"
-			local timerValue = global.caffeineTimer.buffValue
-			local timerCaption = string.format("%s %d s", text, timerValue)
-			player.gui.left.add{type = "frame", name = "caffeineRoot", caption = {"caffeineGUICaption"}, direction = "vertical"}
-			player.gui.left.caffeineRoot.add{type = "label", name = "caffeineTimerLabel", caption = timerCaption}
-		end
+script.on_event(defines.events.on_player_died, function(event)
+
+	-- just stop all the timers and buffs; player died after all
+	reset_player_caffeine_data(event.player_index)
+	update_gui(event.player_index)
+end)
+
+script.on_event(defines.events.on_player_left_game, function(event)
+
+	-- just stop all the timers and buffs; it's the simplest thing to do
+	reset_player_caffeine_data(event.player_index)
+	update_gui(event.player_index)
+end)
+
+function update_gui(player_index)
+
+	local game_player = game.players[player_index]
+	local tf_player = global.tfCaffeine.players[player_index]
+
+	if game_player == nil or tf_player == nil then
+		return
 	end
-end
 
-
-function updateGUI()
-	local text
-	local timerValue
-	if global.caffeineTimer.state == "buff" then
-		text = "Increased for"
-		timerValue = global.caffeineTimer.buffValue
-	elseif global.caffeineTimer.state == "debuff" then
-		text = "Decreased for"
-		timerValue = global.caffeineTimer.debuffValue
+	if tf_player.remaining_seconds == 0 then
+		if game_player.gui.left.tfCaffeine ~= nil then game_player.gui.left.tfCaffeine.destroy() end
+		return
+	end
+	
+	-- create the gui if it's not already there
+	if game_player.gui.left.tfCaffeine == nil then
+		game_player.gui.left.add({type = "frame", name = "tfCaffeine", caption = {"caffeineGUICaption"}, direction = "vertical"})
+		game_player.gui.left.tfCaffeine.add({type = "label", name = "caffeineTimerLabel", caption = ""})
 	end
 
-	for _, player in ipairs(game.players) do
-		if player.gui.left.caffeineRoot ~= nil then
-			local arguments = "%s %d s"
-			if timerValue > 600 then
-				timerValue = math.floor(timerValue / 60)
-				arguments = "%s %d min"
-			end
-			player.gui.left.caffeineRoot.caffeineTimerLabel.caption = string.format(arguments, text, timerValue)
-		end
+	if tf_player.state == STATE_NOTRUNNING then return end
+	
+	if tf_player.remaining_seconds > 600  then
+		game_player.gui.left.tfCaffeine.caffeineTimerLabel.caption = string.format(
+			"Crafting modified by %d%% for %d min"
+			, math.floor(game_player.character_crafting_speed_modifier * 100)
+			, math.floor(tf_player.remaining_seconds / 60)
+		)
+	else
+		game_player.gui.left.tfCaffeine.caffeineTimerLabel.caption = string.format(
+			"Crafting modified by %d%% for %d s"
+			, math.floor(game_player.character_crafting_speed_modifier * 100)
+			, tf_player.remaining_seconds
+		)
 	end
-end
-
-
-function initTables()
-	global.caffeineTimer = {}
-		global.caffeineTimer.running = false
-		global.caffeineTimer.state = "nothing"
-		global.caffeineTimer.buffValue = 0
-		global.caffeineTimer.debuffValue = 0
-
-	global.caffeineTimer.initialModifierValue = game.forces.player.manual_crafting_speed_modifier
-	global.initDone = false
 end
